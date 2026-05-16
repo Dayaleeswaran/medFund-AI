@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --mf-neon: #34ff9a;
+  --mf-cyan: #4de8ff;
+  --mf-navy: #071a2c;
+  --mf-ink: #0a2540;
+  --background: #e8f4ff;
+  --foreground: var(--mf-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  min-height: 100%;
+  color: var(--foreground);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--mf-neon), white 40%);
+  color: #04251a;
+}
+
+/* subtle scrollbar for webkit */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(52, 255, 154, 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(52, 255, 154, 0.45),
+    rgba(77, 232, 255, 0.35)
+  );
+  border-radius: 999px;
+}
