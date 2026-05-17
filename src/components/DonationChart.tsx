@@ -68,7 +68,7 @@ export function DonationChart({ transactions, type = "inflow" }: { transactions:
               fontSize: '12px'
             }}
             itemStyle={{ color: 'var(--mf-neon)' }}
-            formatter={(val: number) => [`LKR ${val.toLocaleString()}`, 'Amount']}
+            formatter={(val) => [`LKR ${Number(val ?? 0).toLocaleString()}`, 'Amount']}
           />
           <Area
             type="monotone"

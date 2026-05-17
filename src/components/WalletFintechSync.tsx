@@ -28,6 +28,7 @@ export function WalletFintechSync() {
         return;
       }
       const w = useWalletStore.getState().wallet;
+      if (!w) return;
       const bal = await fintechGetBalance();
       const hist = await fintechGetHistory({ walletId: w.id });
       const balance = bal.available ?? bal.ledger ?? w.balance;

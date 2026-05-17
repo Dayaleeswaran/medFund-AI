@@ -9,7 +9,7 @@ export function RecommendedCampaigns({ currentCampaignId }: { currentCampaignId:
   
   // Filter active and verified campaigns, exclude current, and sort by trust score
   const recommendations = campaigns
-    .filter(c => c.id !== currentCampaignId && c.status === "active" && c.verification_status === "verified")
+    .filter(c => c.id !== currentCampaignId && c.status === "active" && c.verification_status === "approved")
     .sort((a, b) => b.trust_score - a.trust_score)
     .slice(0, 3);
 

@@ -19,7 +19,7 @@ const signupSchema = z.object({
   email: z.string().trim().email("Enter a valid email"),
   password: z.string().min(6, "Use at least 6 characters"),
   role: z.enum(["donator", "fund_raiser", "hospital", "admin"], {
-    required_error: "Please select a role",
+    message: "Please select a role",
   }),
 });
 

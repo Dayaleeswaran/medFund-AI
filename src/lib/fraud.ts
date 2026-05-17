@@ -34,7 +34,7 @@ export function analyzeCampaignFraud(campaign: Campaign): FraudAnalysis {
 
   fraud = clamp(fraud + Math.random() * 4 - 2, 0, 100);
   const trust = clamp(
-    100 - fraud + (campaign.verification_status === "verified" ? 12 : 0),
+    100 - fraud + (campaign.verification_status === "approved" ? 12 : 0),
     0,
     100,
   );

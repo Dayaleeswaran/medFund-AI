@@ -11,6 +11,14 @@ export default function WalletPage() {
   const wallet = useWalletStore((s) => s.wallet);
   const transactions = useWalletStore((s) => s.transactions);
 
+  if (!wallet) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <p className="text-white/60">Loading smart wallet...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div>

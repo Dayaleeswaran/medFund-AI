@@ -68,6 +68,7 @@ export function PayoutModal({
       toast.success(`CEFTS initiated · ${res.reference}`);
       setOpen(false);
       try {
+        if (!wallet) return;
         const bal = await fintechGetBalance();
         const hist = await fintechGetHistory({ walletId: wallet.id });
         refreshMirror({

@@ -56,8 +56,8 @@ export function useSupabaseRealtime(userId?: string | null) {
             // Check if status changed to verified
             if (
               payload.old && 
-              (payload.old as Record<string, unknown>).verification_status !== "verified" && 
-              newCamp.verification_status === "verified" &&
+              (payload.old as Record<string, unknown>).verification_status !== "approved" && 
+              newCamp.verification_status === "approved" &&
               newCamp.user_id === userId
             ) {
               useNotificationStore.getState().addNotification(

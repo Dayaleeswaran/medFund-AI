@@ -52,6 +52,7 @@ export function DonationModal({
   const pushEvent = useFintechEventsStore((s) => s.push);
 
   async function refreshBankMirror() {
+    if (!wallet) return;
     try {
       const bal = await fintechGetBalance();
       const hist = await fintechGetHistory({ walletId: wallet.id });

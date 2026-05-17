@@ -68,7 +68,7 @@ export default function CampaignDetailPage() {
   );
 
   const canPayout =
-    campaign.verification_status === "verified" && campaign.status === "active";
+    campaign.verification_status === "approved" && campaign.status === "active";
 
   return (
     <div className="space-y-8 text-white">
@@ -138,7 +138,7 @@ export default function CampaignDetailPage() {
                     <GlowButton 
                       type="button" 
                       className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={user && !user.is_verified}
+                      disabled={!!user && !user.is_verified}
                     >
                       {user && !user.is_verified ? "Verification pending" : "Donate (live transfer)"}
                     </GlowButton>
