@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { checkFintechRateLimit } from "@/lib/fintech/rate-limit";
-import {
-  getClientKeyFromRequest,
-  FintechHttpError,
-} from "@/lib/fintech/client";
+import { getClientKeyFromRequest } from "@/lib/http/client-ip";
 import {
   FintechConfigError,
   isFintechConfigured,
 } from "@/lib/fintech/config";
+import { FintechHttpError } from "@/lib/fintech/client";
 
 export function fintechJson(data: unknown, status = 200) {
   return NextResponse.json(data, { status });

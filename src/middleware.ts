@@ -1,11 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabasePublicConfig } from "@/lib/supabase/env-public";
 
-const protectedPrefixes = ["/dashboard", "/wallet", "/admin", "/voice-assistant"];
+const protectedPrefixes = [
+  "/dashboard",
+  "/wallet",
+  "/admin",
+  "/voice-assistant",
+  "/campaigns",
+];
 
 export async function middleware(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url, key } = getSupabasePublicConfig();
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   if (!url || !key) return response;
@@ -15,7 +21,7 @@ export async function middleware(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
@@ -23,6 +29,9 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
+        Object.entries(headers).forEach(([k, v]) => {
+          response.headers.set(k, v);
+        });
       },
     },
   });
@@ -46,9 +55,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/wallet/:path*",
-    "/admin/:path*",
-    "/voice-assistant/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

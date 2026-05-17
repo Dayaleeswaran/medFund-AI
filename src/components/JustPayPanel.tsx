@@ -96,69 +96,69 @@ export function JustPayPanel() {
   }
 
   return (
-    <GlassCard className="bg-white/55 text-[var(--mf-navy)]">
+    <GlassCard className="bg-white/70 text-[var(--mf-navy)] border-white/40 shadow-xl">
       <div className="flex items-center gap-2">
-        <Smartphone className="h-5 w-5 text-cyan-700" />
-        <h2 className="text-lg font-semibold">JustPay (sandbox)</h2>
+        <Smartphone className="h-5 w-5 text-[var(--mf-navy)]" />
+        <h2 className="text-lg font-bold text-[var(--mf-navy)]">JustPay (sandbox)</h2>
       </div>
-      <p className="mt-2 text-sm text-[var(--mf-ink)]/75">
+      <p className="mt-2 text-sm text-[var(--mf-navy)]/70">
         Bodies are forwarded as JSON; align field names with your API manual if
         responses show validation errors.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Label htmlFor="jp-m">Mobile</Label>
+          <Label htmlFor="jp-m" className="text-xs font-bold text-[var(--mf-navy)]/80">MOBILE</Label>
           <Input
             id="jp-m"
             value={mobile}
             onChange={(e) => setMobile(e.target.value)}
             placeholder="+94…"
-            className="mt-1 text-[var(--mf-navy)]"
+            className="mt-1 border-[var(--mf-navy)]/20 bg-white/60 text-[var(--mf-navy)] font-medium placeholder:text-[var(--mf-navy)]/40 focus-visible:ring-[var(--mf-navy)]/50"
           />
         </div>
         <div className="sm:col-span-2">
-          <Label htmlFor="jp-a">Account id (post-register)</Label>
+          <Label htmlFor="jp-a" className="text-xs font-bold text-[var(--mf-navy)]/80">ACCOUNT ID (POST-REGISTER)</Label>
           <Input
             id="jp-a"
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className="mt-1 text-[var(--mf-navy)]"
+            className="mt-1 border-[var(--mf-navy)]/20 bg-white/60 text-[var(--mf-navy)] font-medium placeholder:text-[var(--mf-navy)]/40 focus-visible:ring-[var(--mf-navy)]/50"
           />
         </div>
         <div>
-          <Label htmlFor="jp-o">OTP</Label>
+          <Label htmlFor="jp-o" className="text-xs font-bold text-[var(--mf-navy)]/80">OTP</Label>
           <Input
             id="jp-o"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            className="mt-1 text-[var(--mf-navy)]"
+            className="mt-1 border-[var(--mf-navy)]/20 bg-white/60 text-[var(--mf-navy)] font-medium placeholder:text-[var(--mf-navy)]/40 focus-visible:ring-[var(--mf-navy)]/50"
           />
         </div>
         <div>
-          <Label htmlFor="jp-amt">Amount LKR</Label>
+          <Label htmlFor="jp-amt" className="text-xs font-bold text-[var(--mf-navy)]/80">AMOUNT LKR</Label>
           <Input
             id="jp-amt"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 text-[var(--mf-navy)]"
+            className="mt-1 border-[var(--mf-navy)]/20 bg-white/60 text-[var(--mf-navy)] font-medium placeholder:text-[var(--mf-navy)]/40 focus-visible:ring-[var(--mf-navy)]/50"
           />
         </div>
         <div className="sm:col-span-2">
-          <Label htmlFor="jp-txn">Transaction id (status poll)</Label>
+          <Label htmlFor="jp-txn" className="text-xs font-bold text-[var(--mf-navy)]/80">TRANSACTION ID (STATUS POLL)</Label>
           <Input
             id="jp-txn"
             value={txnRef}
             onChange={(e) => setTxnRef(e.target.value)}
-            className="mt-1 text-[var(--mf-navy)]"
+            className="mt-1 border-[var(--mf-navy)]/20 bg-white/60 text-[var(--mf-navy)] font-medium placeholder:text-[var(--mf-navy)]/40 focus-visible:ring-[var(--mf-navy)]/50"
           />
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-6 flex flex-wrap gap-3">
         <Button
           type="button"
-          variant="secondary"
           disabled={step === "busy"}
           onClick={() => void register()}
+          className="bg-[var(--mf-navy)] text-white hover:bg-[var(--mf-navy)]/90"
         >
           {step === "busy" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -167,16 +167,16 @@ export function JustPayPanel() {
         </Button>
         <Button
           type="button"
-          variant="secondary"
           disabled={step === "busy"}
           onClick={() => void verify()}
+          className="bg-[var(--mf-navy)] text-white hover:bg-[var(--mf-navy)]/90"
         >
           Verify OTP
         </Button>
         <GlowButton
           type="button"
           disabled={step === "busy"}
-          className="!h-10 !px-4 !text-sm"
+          className="!h-10 !px-6 !text-sm"
           onClick={() => void pay()}
         >
           Pay
@@ -186,6 +186,7 @@ export function JustPayPanel() {
           variant="outline"
           disabled={step === "busy"}
           onClick={() => void pollStatus()}
+          className="border-[var(--mf-navy)]/30 text-[var(--mf-navy)] hover:bg-[var(--mf-navy)]/10"
         >
           Status
         </Button>

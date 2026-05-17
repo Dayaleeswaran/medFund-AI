@@ -17,10 +17,10 @@ export default function WalletPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/90">
           Smart wallet
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--mf-navy)] sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Live ledger + core banking (sandbox)
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-[var(--mf-ink)]/75">
+        <p className="mt-2 max-w-2xl text-sm text-cyan-50/85">
           Balances and rails sync from GetAccountBalance / GetAccountTransactions.
           Donations post InternalTransfer server-side; payouts use CEFTS.
         </p>
@@ -32,7 +32,7 @@ export default function WalletPage() {
       <GlassCard className="bg-[#061f36]/90 text-white">
         <TransactionFeed
           items={transactions}
-          currency={wallet.currency === "LKR" ? "LKR" : "USD"}
+          currency={wallet.currency ?? "LKR"}
         />
       </GlassCard>
 

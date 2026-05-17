@@ -10,11 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCampaignStore } from "@/store/campaign-store";
+import { useAuthStore } from "@/store/auth-store";
 import type { Campaign } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 import toast from "react-hot-toast";
 
 export default function CampaignsPage() {
   const campaigns = useCampaignStore((s) => s.campaigns);
+  const user = useAuthStore((s) => s.user);
   const upsert = useCampaignStore((s) => s.upsertCampaign);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -32,8 +35,8 @@ export default function CampaignsPage() {
       return;
     }
     const c: Campaign = {
-      id: `cmp-${Date.now()}`,
-      user_id: "local",
+      id: uuidv4(),
+      user_id: user?.id || "local",
       patient_name: form.patient_name,
       hospital_name: form.hospital_name,
       title: form.title,
@@ -42,15 +45,23 @@ export default function CampaignsPage() {
       target_amount: target,
       raised_amount: 0,
       urgency: "high",
-      status: "pending_verification",
-      verification_status: "pending",
+      status: user?.role === "admin" ? "active" : "pending_verification",
+      verification_status:
+        user?.role === "admin" ? "approved" :
+        user?.role === "hospital" ? "pending_admin" : "pending_hospital",
       fraud_score: 22 + Math.round(Math.random() * 15),
       trust_score: 72,
       donor_count: 0,
       created_at: new Date().toISOString(),
     };
     upsert(c);
-    toast.success("Campaign staged — awaiting hospital attestation");
+    if (user?.role === "admin") {
+      toast.success("Campaign created and is now live!");
+    } else if (user?.role === "hospital") {
+      toast.success("Campaign submitted for final Admin approval");
+    } else {
+      toast.success("Campaign staged — awaiting hospital approval");
+    }
     setOpen(false);
     setForm({
       patient_name: "",
@@ -68,10 +79,10 @@ export default function CampaignsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/90">
             Live floor
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--mf-navy)] sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Emergency campaigns streaming in realtime
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-[var(--mf-ink)]/75">
+          <p className="mt-2 max-w-xl text-sm text-cyan-50/85">
             Every card shows verification status, AI risk, donor velocity, and
             goal pressure — optimized for one-thumb mobile triage.
           </p>
@@ -145,7 +156,7 @@ export default function CampaignsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="tg">Target (USD)</Label>
+                <Label htmlFor="tg">Target (LKR)</Label>
                 <Input
                   id="tg"
                   className="mt-1 text-[var(--mf-navy)]"
@@ -169,9 +180,11 @@ export default function CampaignsPage() {
 
       <div className="rounded-[32px] bg-gradient-to-b from-[#041a30] to-[#052038] p-5 sm:p-6 shadow-[0_30px_90px_rgba(4,26,48,0.35)]">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {campaigns.map((c, i) => (
-            <CampaignCard key={c.id} campaign={c} index={i} />
-          ))}
+          {campaigns
+            .filter((c) => c.verification_status === "approved")
+            .map((c, i) => (
+              <CampaignCard key={c.id} campaign={c} index={i} />
+            ))}
         </div>
       </div>
     </div>

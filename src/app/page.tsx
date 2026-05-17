@@ -56,10 +56,11 @@ function AnimatedHeroNumber({ value }: { value: number }) {
 
 export default function HomePage() {
   const campaigns = useCampaignStore((s) => s.campaigns);
-  const top = [...campaigns]
+  const approved = campaigns.filter((c) => c.verification_status === "approved");
+  const top = [...approved]
     .sort((a, b) => b.raised_amount - a.raised_amount)
     .slice(0, 3);
-  const totalRaised = campaigns.reduce((a, c) => a + c.raised_amount, 0);
+  const totalRaised = approved.reduce((a, c) => a + c.raised_amount, 0);
 
   return (
     <div className="space-y-20 pb-12">
@@ -77,10 +78,10 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-[var(--mf-navy)] sm:text-5xl lg:text-[3.25rem]"
+            className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-[3.25rem]"
           >
             Emergency crowdfunding with hospital-grade trust,{" "}
-            <span className="bg-gradient-to-r from-cyan-600 to-emerald-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
               instant wallet rails
             </span>
             , and an AI that never sleeps.
@@ -89,7 +90,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-5 max-w-xl text-base text-[var(--mf-ink)]/80"
+            className="mt-5 max-w-xl text-base text-cyan-50/85"
           >
             MediFund AI routes lifesaving donations like Revolut routes FX —
             with transparent ledgers, live fraud scoring, and voice-guided flows

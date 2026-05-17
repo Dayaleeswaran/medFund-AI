@@ -5,24 +5,29 @@ import type { Profile } from "@/types";
 type AuthState = {
   user: Profile | null;
   setUser: (u: Profile | null) => void;
-  demoLogin: (role?: Profile["role"]) => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 };
 
-const demoProfile = (role: Profile["role"] = "donor"): Profile => ({
-  id: "demo-user",
-  full_name: role === "hospital" ? "Dr. A. Kapoor" : "Alex River",
-  role,
-  avatar_url: null,
-});
+
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),
-      demoLogin: (role = "donor") => set({ user: demoProfile(role) }),
-      signOut: () => set({ user: null }),
+      signOut: async () => {
+        try {
+          const { createClient, isSupabaseConfigured } = await import(
+            "@/lib/supabase/client"
+          );
+          if (typeof window !== "undefined" && isSupabaseConfigured()) {
+            await createClient()?.auth.signOut();
+          }
+        } catch {
+          /* ignore */
+        }
+        set({ user: null });
+      },
     }),
     { name: "medifund-auth" },
   ),

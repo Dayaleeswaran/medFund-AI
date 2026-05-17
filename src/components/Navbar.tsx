@@ -3,12 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Menu, Sparkles } from "lucide-react";
+import { Menu, Sparkles, Bell } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { useNotificationStore } from "@/store/notification-store";
 import { Sidebar } from "@/components/Sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const nav = [
   { href: "/campaigns", label: "Live emergencies" },
@@ -20,6 +29,7 @@ export function Navbar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
   const [open, setOpen] = useState(false);
 
   return (
@@ -59,10 +69,58 @@ export function Navbar() {
         <div className="hidden items-center gap-2 md:flex">
           {user ? (
             <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative rounded-full text-white/80 hover:text-white hover:bg-white/10">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-[var(--mf-neon)]" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 border-white/15 bg-[#071a2c]/95 backdrop-blur-xl text-white">
+                  <DropdownMenuLabel className="flex items-center justify-between">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-white/50 hover:text-white hover:bg-transparent">
+                        Mark all read
+                      </Button>
+                    )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-white/50">No notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <DropdownMenuItem 
+                          key={n.id} 
+                          className={cn("flex flex-col items-start gap-1 p-3 focus:bg-white/10", !n.read && "bg-white/5")}
+                          onClick={() => markAsRead(n.id)}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            <span className="font-semibold">{n.title}</span>
+                            {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-[var(--mf-neon)]" />}
+                          </div>
+                          <span className="text-xs text-white/70 line-clamp-2">{n.message}</span>
+                          <span className="text-[10px] text-white/40">{new Date(n.timestamp).toLocaleTimeString()}</span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
                 {user.full_name || "Supporter"}
               </span>
-              <Button variant="secondary" size="sm" onClick={() => signOut()}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  void signOut();
+                }}
+              >
                 Sign out
               </Button>
             </>
@@ -120,7 +178,12 @@ export function Navbar() {
                 </Link>
               </div>
             ) : (
-              <Button variant="danger" onClick={() => signOut()}>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  void signOut();
+                }}
+              >
                 Sign out
               </Button>
             )}

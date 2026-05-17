@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthStore } from "@/store/auth-store";
-import type { UserRole } from "@/types";
+import { mapAuthUserToProfile } from "@/lib/supabase/map-auth-user";
 import { useSupabaseRealtime } from "@/hooks/use-supabase-realtime";
 
 function AuthBridge({ children }: { children: React.ReactNode }) {
@@ -16,28 +16,14 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     if (!supabase) return;
 
-    const mapUser = (u: {
-      id: string;
-      email?: string | null;
-      user_metadata?: Record<string, unknown>;
-    }) => ({
-      id: u.id,
-      full_name:
-        (u.user_metadata?.full_name as string | undefined) ??
-        u.email ??
-        "User",
-      role: (u.user_metadata?.role as UserRole | undefined) ?? "donor",
-      avatar_url: (u.user_metadata?.avatar_url as string | undefined) ?? null,
-    });
-
     void supabase.auth.getUser().then(({ data: { user: u } }) => {
-      if (u) setUser(mapUser(u));
+      if (u) setUser(mapAuthUserToProfile(u));
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) setUser(mapUser(session.user));
+      if (session?.user) setUser(mapAuthUserToProfile(session.user));
       else setUser(null);
     });
 

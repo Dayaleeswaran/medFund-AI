@@ -7,8 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(
   amount: number,
-  currency = "USD",
-  locale = "en-US",
+  currency = "LKR",
+  locale = "en-LK",
 ) {
   return new Intl.NumberFormat(locale, {
     style: "currency",
@@ -18,7 +18,7 @@ export function formatCurrency(
 }
 
 export function formatCompact(amount: number) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-LK", {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(amount);

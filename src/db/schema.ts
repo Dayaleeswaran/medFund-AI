@@ -13,7 +13,7 @@ import {
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   fullName: text("full_name"),
-  role: text("role").default("donor"),
+  role: text("role").default("donator"),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -64,7 +64,7 @@ export const wallets = pgTable("wallets", {
     .notNull()
     .unique(),
   balance: numeric("balance", { precision: 12, scale: 2 }).default("0"),
-  currency: text("currency").default("USD"),
+  currency: text("currency").default("LKR"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -102,6 +102,23 @@ export const aiRiskScores = pgTable("ai_risk_scores", {
     .notNull(),
   riskScore: numeric("risk_score", { precision: 5, scale: 2 }).notNull(),
   signals: jsonb("signals").$type<string[]>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+/** Tracks failed password attempts per email (server + DATABASE_URL). */
+export const loginCredentialGuards = pgTable("login_credential_guards", {
+  emailNorm: text("email_norm").primaryKey(),
+  failedAttempts: integer("failed_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+/** In-app admin notifications (e.g. lockouts). View in Supabase Table Editor or build an admin UI. */
+export const adminSecurityAlerts = pgTable("admin_security_alerts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  alertType: text("alert_type").notNull(),
+  summary: text("summary").notNull(),
+  detail: jsonb("detail").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 

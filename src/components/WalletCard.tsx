@@ -26,7 +26,7 @@ export function WalletCard({
           <p className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {formatCurrency(
               wallet.balance,
-              wallet.currency || "USD",
+              wallet.currency || "LKR",
               wallet.currency === "LKR" ? "en-LK" : "en-US",
             )}
           </p>
@@ -49,7 +49,7 @@ export function WalletCard({
             Inflow (24h)
           </p>
           <p className="mt-2 text-xl font-semibold text-white">
-            +{formatCurrency(inflowToday, wallet.currency || "USD", wallet.currency === "LKR" ? "en-LK" : "en-US")}
+            +{formatCurrency(inflowToday, wallet.currency || "LKR", wallet.currency === "LKR" ? "en-LK" : "en-US")}
           </p>
         </motion.div>
         <motion.div

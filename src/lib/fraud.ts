@@ -14,7 +14,10 @@ export function analyzeCampaignFraud(campaign: Campaign): FraudAnalysis {
   let fraud = campaign.fraud_score || 0;
   const alerts: string[] = [];
 
-  if (campaign.verification_status === "pending") {
+  if (
+    campaign.verification_status === "pending_hospital" ||
+    campaign.verification_status === "pending_admin"
+  ) {
     fraud += 8;
     alerts.push("Verification still pending — escrow holds release");
   }

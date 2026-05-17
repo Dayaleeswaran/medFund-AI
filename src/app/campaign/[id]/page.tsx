@@ -1,10 +1,13 @@
 "use client";
 
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Landmark } from "lucide-react";
 import { useCampaignStore } from "@/store/campaign-store";
+import { useAuthStore } from "@/store/auth-store";
 import { FraudScoreCard } from "@/components/FraudScoreCard";
 import { DonationModal } from "@/components/DonationModal";
 import { PayoutModal } from "@/components/PayoutModal";
@@ -12,25 +15,52 @@ import { GlowButton } from "@/components/GlowButton";
 import { GlassCard } from "@/components/GlassCard";
 import { AnimatedProgressBar } from "@/components/AnimatedProgressBar";
 import { mergeCampaignFraudWithFintech } from "@/lib/fraud";
-import { MOCK_RISK_BY_CAMPAIGN } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 import { useFintechEventsStore } from "@/store/fintech-events-store";
 import { Button } from "@/components/ui/button";
+import { CampaignAudioPlayer } from "@/components/CampaignAudioPlayer";
+import { RecommendedCampaigns } from "@/components/RecommendedCampaigns";
+import { AiSummaryBox } from "@/components/AiSummaryBox";
 
 export default function CampaignDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const id = String(params.id ?? "");
   const campaign = useCampaignStore((s) => s.campaigns.find((c) => c.id === id));
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role ?? "donator";
+  const applyDonation = useCampaignStore((s) => s.applyDonation);
 
-  const fintechSignals = useFintechEventsStore((s) =>
-    s.signalsForCampaign(id),
-  );
+  const getSignalsForCampaign = useFintechEventsStore((s) => s.signalsForCampaign);
+  const [fintechSignals, setFintechSignals] = useState({ fraudDelta: 0, alerts: [] as string[] });
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setFintechSignals(getSignalsForCampaign(id));
+  }, [getSignalsForCampaign, id]);
+
+  useEffect(() => {
+    const success = searchParams.get("ipg_success");
+    const error = searchParams.get("ipg_error");
+    
+    if (success) {
+      toast.success("Payment Gateway Transaction Successful!");
+      router.replace(`/campaign/${id}`);
+    } else if (error) {
+      toast.error(`Payment Gateway Error: ${error}`);
+      router.replace(`/campaign/${id}`);
+    }
+  }, [searchParams, id, router]);
+
+  if (!mounted) return null; // Prevent hydration mismatch
 
   if (!campaign) notFound();
 
   const fraud = mergeCampaignFraudWithFintech(campaign, fintechSignals);
-  const signals =
-    MOCK_RISK_BY_CAMPAIGN[campaign.id]?.signals ?? fraud.alerts.slice(0, 4);
+  const signals = fraud.alerts.slice(0, 4);
 
   const pct = Math.min(
     100,
@@ -59,9 +89,12 @@ export default function CampaignDetailPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/75">
             {campaign.hospital_name}
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-            {campaign.title}
-          </h1>
+          <div className="flex items-center justify-between mt-3">
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              {campaign.title}
+            </h1>
+            <CampaignAudioPlayer text={campaign.description || ""} />
+          </div>
           <p className="mt-2 text-lg text-white/80">
             Supporting{" "}
             <span className="font-semibold text-white">{campaign.patient_name}</span>
@@ -69,36 +102,51 @@ export default function CampaignDetailPage() {
           <p className="mt-4 text-sm leading-relaxed text-white/70">
             {campaign.description}
           </p>
+          <AiSummaryBox text={campaign.description || ""} />
 
-          <div className="mt-6">
-            <AnimatedProgressBar value={pct} />
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <div>
-              <p className="text-xs text-white/55">Raised</p>
-              <p className="text-2xl font-semibold">
-                {formatCurrency(campaign.raised_amount)}
-              </p>
+          <div className="mt-10">
+            <div className="flex items-end justify-between border-b border-white/10 pb-4">
+              <div>
+                <p className="text-xs font-medium text-white/50 uppercase tracking-widest">Raised</p>
+                <p className="mt-2 text-4xl font-bold text-white tracking-tight">
+                  {formatCurrency(campaign.raised_amount)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-medium text-white/50 uppercase tracking-widest">Goal</p>
+                <p className="mt-2 text-4xl font-bold text-white/80 tracking-tight">
+                  {formatCurrency(campaign.target_amount)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-white/55">Goal</p>
-              <p className="text-2xl font-semibold text-white/90">
-                {formatCurrency(campaign.target_amount)}
-              </p>
+            <div className="mt-4">
+              <AnimatedProgressBar value={pct} />
             </div>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <DonationModal
-              campaign={campaign}
-              trigger={
-                <GlowButton type="button" className="w-full sm:w-auto">
-                  Donate (live transfer)
-                </GlowButton>
-              }
-            />
-            {canPayout ? (
+            {(role === "donator" || role === "admin") && (
+              <div className="relative group w-full sm:w-auto">
+                {user && !user.is_verified && (
+                  <div className="absolute -top-10 left-0 w-max rounded-lg bg-rose-600 px-2 py-1 text-[10px] opacity-0 transition group-hover:opacity-100">
+                    Verify account to donate
+                  </div>
+                )}
+                <DonationModal
+                  campaign={campaign}
+                  trigger={
+                    <GlowButton 
+                      type="button" 
+                      className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={user && !user.is_verified}
+                    >
+                      {user && !user.is_verified ? "Verification pending" : "Donate (live transfer)"}
+                    </GlowButton>
+                  }
+                />
+              </div>
+            )}
+            {canPayout && (role === "hospital" || role === "admin") ? (
               <PayoutModal
                 campaign={campaign}
                 trigger={
@@ -136,6 +184,14 @@ export default function CampaignDetailPage() {
             </ul>
           </GlassCard>
         </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <RecommendedCampaigns currentCampaignId={campaign.id} />
       </motion.div>
     </div>
   );

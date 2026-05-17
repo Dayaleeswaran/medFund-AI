@@ -10,13 +10,19 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth-store";
 
-const links = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/campaigns", label: "Campaigns", icon: Activity },
-  { href: "/wallet", label: "Wallet", icon: Wallet },
-  { href: "/admin", label: "Hospital", icon: ShieldCheck },
-  { href: "/voice-assistant", label: "Voice AI", icon: Mic },
+const baseLinks = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, roles: null },
+  { href: "/campaigns", label: "Campaigns", icon: Activity, roles: null },
+  { href: "/wallet", label: "Wallet", icon: Wallet, roles: null },
+  {
+    href: "/admin",
+    label: "Approvals",
+    icon: ShieldCheck,
+    roles: ["admin", "hospital"] as const,
+  },
+  { href: "/voice-assistant", label: "Voice AI", icon: Mic, roles: null },
 ];
 
 export function Sidebar({
@@ -26,6 +32,12 @@ export function Sidebar({
   className?: string;
   onNavigate?: () => void;
 }) {
+  const role = useAuthStore((s) => s.user?.role ?? "donator");
+  const links = baseLinks.filter((l) => {
+    if (!l.roles) return true;
+    return (l.roles as readonly string[]).includes(role);
+  });
+
   return (
     <aside
       className={cn(

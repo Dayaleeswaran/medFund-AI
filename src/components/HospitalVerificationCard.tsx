@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/GlassCard";
 import type { Campaign } from "@/types";
 import { useCampaignStore } from "@/store/campaign-store";
+import { useAuthStore } from "@/store/auth-store";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -15,15 +16,25 @@ export function HospitalVerificationCard({
   campaign: Campaign;
 }) {
   const patch = useCampaignStore((s) => s.patchCampaign);
+  const user = useAuthStore((s) => s.user);
 
   function approve() {
-    patch(campaign.id, {
-      verification_status: "verified",
-      status: "active",
-      fraud_score: Math.max(5, campaign.fraud_score - 8),
-      trust_score: Math.min(100, campaign.trust_score + 10),
-    });
-    toast.success("Campaign verified — donors can accelerate payouts");
+    if (user?.role === "hospital") {
+      patch(campaign.id, {
+        verification_status: "pending_admin",
+        fraud_score: Math.max(5, campaign.fraud_score - 4),
+        trust_score: Math.min(100, campaign.trust_score + 5),
+      });
+      toast.success("Attestation signed — forwarded for Admin review");
+    } else if (user?.role === "admin") {
+      patch(campaign.id, {
+        verification_status: "approved",
+        status: "active",
+        fraud_score: Math.max(5, campaign.fraud_score - 8),
+        trust_score: Math.min(100, campaign.trust_score + 10),
+      });
+      toast.success("Campaign approved — now live for donors");
+    }
   }
 
   function reject() {
@@ -35,7 +46,11 @@ export function HospitalVerificationCard({
     toast("Campaign held — care team notified", { icon: "⏸️" });
   }
 
-  const pending = campaign.verification_status === "pending";
+  const isPendingHospital = campaign.verification_status === "pending_hospital";
+  const isPendingAdmin = campaign.verification_status === "pending_admin";
+  const canApprove =
+    (user?.role === "hospital" && isPendingHospital) ||
+    (user?.role === "admin" && isPendingAdmin);
 
   return (
     <GlassCard className="flex flex-col gap-4">
@@ -54,14 +69,14 @@ export function HospitalVerificationCard({
         <span
           className={cn(
             "rounded-full px-3 py-1 text-[10px] font-bold uppercase",
-            pending
+            isPendingHospital || isPendingAdmin
               ? "bg-amber-400/20 text-amber-100"
-              : campaign.verification_status === "verified"
+              : campaign.verification_status === "approved"
                 ? "bg-emerald-500/20 text-emerald-100"
                 : "bg-red-500/20 text-red-100",
           )}
         >
-          {campaign.verification_status}
+          {campaign.verification_status.replace("_", " ")}
         </span>
       </div>
 
@@ -69,17 +84,17 @@ export function HospitalVerificationCard({
         <Button
           size="sm"
           className="gap-2"
-          disabled={!pending}
+          disabled={!canApprove}
           onClick={approve}
         >
           <CheckCircle2 className="h-4 w-4" />
-          Approve & attest
+          {user?.role === "admin" ? "Final Approve" : "Sign Attestation"}
         </Button>
         <Button
           variant="danger"
           size="sm"
           className="gap-2"
-          disabled={!pending}
+          disabled={!canApprove}
           onClick={reject}
         >
           <XCircle className="h-4 w-4" />
@@ -89,7 +104,7 @@ export function HospitalVerificationCard({
 
       <motion.div
         className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/60"
-        animate={{ opacity: pending ? 1 : 0.65 }}
+        animate={{ opacity: canApprove ? 1 : 0.65 }}
       >
         <Stethoscope className="h-4 w-4 text-[var(--mf-neon)]" />
         Notes sync to MediFund ledger + AI re-scores within seconds.

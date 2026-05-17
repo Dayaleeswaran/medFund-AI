@@ -17,7 +17,7 @@ function formatTime(iso: string) {
 
 export function TransactionFeed({
   items,
-  currency = "USD",
+  currency = "LKR",
 }: {
   items: Transaction[];
   currency?: string;

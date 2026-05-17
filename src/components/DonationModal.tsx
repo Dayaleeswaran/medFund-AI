@@ -3,6 +3,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export function DonationModal({
   const [step, setStep] = useState<"form" | "success">("form");
   const [busy, setBusy] = useState(false);
   const [lastRef, setLastRef] = useState<string | null>(null);
+  const router = useRouter();
 
   const applyDonation = useCampaignStore((s) => s.applyDonation);
   const patchCampaign = useCampaignStore((s) => s.patchCampaign);
@@ -64,6 +66,90 @@ export function DonationModal({
       });
     } catch {
       /* mirror is best-effort */
+    }
+  }
+
+  async function onDonateIpg() {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n < 100) {
+      toast.error("Enter at least 100 LKR");
+      return;
+    }
+    setBusy(true);
+    try {
+      // 1. Get Session from our backend
+      const res = await fetch("/api/fintech/ipg/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: n, campaignId: campaign.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to initiate IPG");
+      
+      // 2. Load the Mastercard checkout.js SDK if not already loaded
+      const scriptId = "mpgs-checkout-script";
+      if (!document.getElementById(scriptId)) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.id = scriptId;
+          script.src = "https://test-seylan.mtf.gateway.mastercard.com/static/checkout/checkout.min.js";
+          script.setAttribute("data-error", "mpgsErrorCallback");
+          script.setAttribute("data-cancel", "mpgsCancelCallback");
+          script.setAttribute("data-complete", "mpgsCompleteCallback");
+          
+          (window as any).mpgsErrorCallback = function(error: any) {
+             console.error("MPGS Error:", error);
+             toast.error(error ? JSON.stringify(error) : "Payment Gateway Error");
+             setBusy(false);
+          };
+          (window as any).mpgsCancelCallback = function() {
+             toast.error("Payment Cancelled by user");
+             setBusy(false);
+          };
+          (window as any).mpgsCompleteCallback = function(resultIndicator: string) {
+             window.location.href = `/api/fintech/ipg/callback?orderId=${data.orderId}&campaignId=${campaign.id}&amount=${n}&resultIndicator=${resultIndicator}`;
+          };
+          
+          script.onload = () => {
+            // Give it a tiny bit of time to initialize
+            setTimeout(resolve, 100);
+          };
+          script.onerror = () => reject(new Error("Failed to load Mastercard SDK"));
+          document.head.appendChild(script);
+        });
+      }
+
+      // 3. Configure and launch the Hosted Checkout
+      if (!(window as any).Checkout) {
+         throw new Error("Mastercard Checkout object not found. Ad blocker?");
+      }
+
+      try {
+        (window as any).Checkout.configure({
+          merchant: data.merchantId,
+          session: { 
+            id: data.sessionId 
+          },
+          interaction: {
+            merchant: {
+              name: 'MediFund Donor Portal'
+            }
+          }
+        });
+        
+        // Use showPaymentPage for redirect, or showLightbox for popup
+        if (typeof (window as any).Checkout.showPaymentPage === 'function') {
+          (window as any).Checkout.showPaymentPage();
+        } else {
+          (window as any).Checkout.showLightbox();
+        }
+      } catch (err) {
+        console.error("MPGS Configure Error:", err);
+        throw new Error("Failed to configure Mastercard Gateway");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "IPG Checkout failed");
+      setBusy(false);
     }
   }
 
@@ -206,24 +292,32 @@ export function DonationModal({
                   {formatCurrency(campaign.target_amount)}
                 </p>
               </div>
-              <GlowButton
-                type="button"
-                className="w-full"
-                disabled={busy}
-                onClick={() => void onDonate()}
-              >
-                {busy ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Posting transfer…
-                  </span>
-                ) : (
-                  <>
-                    Donate{" "}
-                    {formatCurrency(Number(amount) || 0, "LKR", "en-LK")}
-                  </>
-                )}
-              </GlowButton>
+              <div className="flex flex-col gap-2">
+                <GlowButton
+                  type="button"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() => void onDonateIpg()}
+                >
+                  {busy ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Connecting to IPG…
+                    </span>
+                  ) : (
+                    <>Pay with Credit / Debit Card ({formatCurrency(Number(amount) || 0)})</>
+                  )}
+                </GlowButton>
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="w-full border-white/20 bg-transparent text-white hover:bg-white/10"
+                  disabled={busy}
+                  onClick={() => void onDonate()}
+                >
+                  Pay via Direct Bank Transfer (Sandbox)
+                </Button>
+              </div>
               <p className="text-center text-[11px] text-white/45">
                 Rate limit: 100 calls / 15 min · X-API-Key never sent to browser
               </p>

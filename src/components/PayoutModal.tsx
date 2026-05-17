@@ -163,7 +163,7 @@ export function PayoutModal({
           ) : (
             <Send className="h-4 w-4" />
           )}
-          Send {formatCurrency(Number(amount) || 0, "LKR", "en-LK")}
+          Send {formatCurrency(Number(amount) || 0)}
         </GlowButton>
         <Button variant="ghost" onClick={() => setOpen(false)}>
           Cancel

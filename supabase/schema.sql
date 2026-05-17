@@ -79,7 +79,7 @@ create table if not exists public.wallets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.profiles (id) on delete cascade unique not null,
   balance numeric(12,2) default 0,
-  currency text default 'USD',
+  currency text default 'LKR',
   updated_at timestamptz default now()
 );
 
@@ -164,16 +164,35 @@ alter publication supabase_realtime add table public.transactions;
 alter publication supabase_realtime add table public.campaigns;
 alter publication supabase_realtime add table public.wallets;
 
--- Trigger: new user → profile + wallet
+-- Trigger: new user → profile + wallet (idempotent for rare retry / partial states)
 create or replace function public.handle_new_user()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
   insert into public.profiles (id, full_name, role)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', ''), 'donor');
-  insert into public.wallets (user_id, balance) values (new.id, 0);
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    'donor'
+  )
+  on conflict (id) do update
+    set
+      full_name = coalesce(
+        nullif(excluded.full_name, ''),
+        public.profiles.full_name
+      ),
+      updated_at = now();
+
+  insert into public.wallets (user_id, balance)
+  values (new.id, 0)
+  on conflict (user_id) do nothing;
+
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created

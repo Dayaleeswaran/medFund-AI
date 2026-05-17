@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useCampaignStore } from "@/store/campaign-store";
 import { useWalletStore } from "@/store/wallet-store";
+import { useNotificationStore } from "@/store/notification-store";
 import type { Campaign } from "@/types";
 
 function mapRowToCampaign(row: Record<string, unknown>): Campaign {
@@ -32,7 +33,7 @@ function mapRowToCampaign(row: Record<string, unknown>): Campaign {
 /** Subscribes to live campaign & wallet updates when Supabase is configured */
 export function useSupabaseRealtime(userId?: string | null) {
   const patchCampaign = useCampaignStore((s) => s.patchCampaign);
-  const setWallet = useWalletStore((s) => s.setWallet);
+  const updateWallet = useWalletStore((s) => s.updateWallet);
   const addTransaction = useWalletStore((s) => s.addTransaction);
 
   useEffect(() => {
@@ -49,10 +50,21 @@ export function useSupabaseRealtime(userId?: string | null) {
         { event: "*", schema: "public", table: "campaigns" },
         (payload) => {
           if (payload.eventType === "UPDATE" && payload.new) {
-            patchCampaign(
-              String((payload.new as Record<string, unknown>).id),
-              mapRowToCampaign(payload.new as Record<string, unknown>),
-            );
+            const newCamp = mapRowToCampaign(payload.new as Record<string, unknown>);
+            patchCampaign(String(newCamp.id), newCamp);
+
+            // Check if status changed to verified
+            if (
+              payload.old && 
+              (payload.old as Record<string, unknown>).verification_status !== "verified" && 
+              newCamp.verification_status === "verified" &&
+              newCamp.user_id === userId
+            ) {
+              useNotificationStore.getState().addNotification(
+                "Campaign Approved!",
+                `Your fundraiser "${newCamp.title}" has been verified and is now live.`
+              );
+            }
           }
         },
       )
@@ -71,11 +83,11 @@ export function useSupabaseRealtime(userId?: string | null) {
       let walletRowId: string | null = null;
       if (w) {
         walletRowId = String(w.id);
-        setWallet({
+        updateWallet({
           id: walletRowId,
           user_id: String(w.user_id),
           balance: Number(w.balance),
-          currency: String(w.currency ?? "USD"),
+          currency: String(w.currency ?? "LKR"),
           updated_at: w.updated_at != null ? String(w.updated_at) : undefined,
         });
       }
@@ -93,11 +105,11 @@ export function useSupabaseRealtime(userId?: string | null) {
           (payload) => {
             if (payload.new) {
               const row = payload.new as Record<string, unknown>;
-              setWallet({
+              updateWallet({
                 id: String(row.id),
                 user_id: String(row.user_id),
                 balance: Number(row.balance),
-                currency: String(row.currency ?? "USD"),
+                currency: String(row.currency ?? "LKR"),
                 updated_at:
                   row.updated_at != null ? String(row.updated_at) : undefined,
               });
@@ -121,17 +133,27 @@ export function useSupabaseRealtime(userId?: string | null) {
             (payload) => {
               if (payload.new) {
                 const t = payload.new as Record<string, unknown>;
+                const amount = Number(t.amount);
+                const type = t.type as "inflow" | "outflow";
+                
                 addTransaction({
                   id: String(t.id),
                   wallet_id: String(t.wallet_id),
-                  type: t.type as "inflow" | "outflow",
-                  amount: Number(t.amount),
+                  type,
+                  amount,
                   description:
                     t.description != null ? String(t.description) : null,
                   campaign_id:
                     t.campaign_id != null ? String(t.campaign_id) : null,
                   created_at: String(t.created_at),
                 });
+
+                if (type === "inflow") {
+                  useNotificationStore.getState().addNotification(
+                    "New Donation Received",
+                    `Your wallet was credited with LKR ${amount.toLocaleString()}`
+                  );
+                }
               }
             },
           )
@@ -148,5 +170,5 @@ export function useSupabaseRealtime(userId?: string | null) {
         void supabase.removeChannel(ch);
       });
     };
-  }, [userId, patchCampaign, setWallet, addTransaction]);
+  }, [userId, patchCampaign, updateWallet, addTransaction]);
 }

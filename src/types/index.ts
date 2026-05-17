@@ -1,10 +1,11 @@
-export type UserRole = "patient" | "donor" | "hospital" | "admin";
+export type UserRole = "fund_raiser" | "donator" | "hospital" | "admin";
 
 export type Profile = {
   id: string;
   full_name: string | null;
   role: UserRole;
   avatar_url: string | null;
+  is_verified: boolean;
   created_at?: string;
 };
 
@@ -16,7 +17,7 @@ export type CampaignStatus =
   | "rejected"
   | "completed";
 
-export type VerificationState = "pending" | "verified" | "rejected";
+export type VerificationState = "pending_hospital" | "pending_admin" | "approved" | "rejected";
 
 export type Campaign = {
   id: string;
@@ -25,6 +26,9 @@ export type Campaign = {
   hospital_name: string;
   title: string;
   description: string | null;
+  diagnosis?: string | null;
+  story?: string | null;
+  qr_code_url?: string | null;
   medical_proof_url: string | null;
   target_amount: number;
   raised_amount: number;
@@ -45,6 +49,8 @@ export type Donation = {
   amount: number;
   status: string;
   payment_ref: string | null;
+  payment_method?: string | null;
+  transaction_reference?: string | null;
   created_at: string;
 };
 

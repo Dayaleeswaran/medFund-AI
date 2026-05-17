@@ -3,6 +3,10 @@ import "server-only";
 export type FintechConfig = {
   baseUrl: string;
   apiKey: string;
+  /** Sandbox “team key” header — defaults to FINTECH_TEAM_KEY or same as apiKey. */
+  teamKey: string;
+  teamKeyHeader: string;
+  qrGeneratePath: string;
   sourceAccount: string;
   internalDestAccount: string;
   balanceAccount: string;
@@ -18,6 +22,12 @@ export type FintechConfig = {
   internalTransferPath: string;
   balancePath: string;
   transactionsPath: string;
+  ipg: {
+    merchantId: string;
+    operatorId: string;
+    password: string;
+    checkoutUrl: string;
+  };
 };
 
 export class FintechConfigError extends Error {
@@ -33,9 +43,19 @@ export function getFintechConfig(): FintechConfig {
   if (!baseUrl || !apiKey) {
     throw new FintechConfigError();
   }
+  const teamKey =
+    process.env.FINTECH_TEAM_KEY?.trim() || apiKey;
+  const teamKeyHeader =
+    process.env.FINTECH_TEAM_KEY_HEADER?.trim() || "X-Team-Key";
+
   return {
     baseUrl: baseUrl.replace(/\/$/, ""),
     apiKey,
+    teamKey,
+    teamKeyHeader,
+    qrGeneratePath:
+      process.env.FINTECH_QR_GENERATE_PATH?.trim() ??
+      "/Posting/Payments/Qr/1.0/GenerateQrPayment",
     sourceAccount:
       process.env.FINTECH_SOURCE_ACCOUNT?.trim() ?? "064000012548001",
     internalDestAccount:
@@ -75,6 +95,14 @@ export function getFintechConfig(): FintechConfig {
     transactionsPath:
       process.env.FINTECH_TRANSACTIONS_PATH?.trim() ??
       "/Inquiry/Account/AccountInquiry/1.0/GetAccountTransactions",
+    ipg: {
+      merchantId: process.env.SEYLAN_IPG_MERCHANT_ID?.trim() ?? "",
+      operatorId: process.env.SEYLAN_IPG_OPERATOR_ID?.trim() ?? "",
+      password: process.env.SEYLAN_IPG_PASSWORD?.trim() ?? "",
+      checkoutUrl:
+        process.env.SEYLAN_IPG_CHECKOUT_URL?.trim() ??
+        "https://seylan.gateway.mastercard.com/api/page/version/57/pay",
+    },
   };
 }
 
